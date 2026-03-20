@@ -1,0 +1,17 @@
+If the Average Latency is low, but the 99th Percentile (P99) is extremely high, what does this tell you about the storage system?
+
+The storage system is exhibiting significant distribution skew, where the majority of requests complete quickly while a critical minority experience severe delays. The average conceals these outliers, but the high P99 reveals that the system is intermittently unresponsive, often due to structural bottlenecks such as SSD Garbage Collection pauses, controller CPU saturation, or resource contention from noisy neighbors in shared environments. This variance creates a significant risk in distributed architectures, as the intermittent delays can trigger timeouts and cascading retries that destabilize the entire cluster. A system with unpredictable latency is often more difficult to manage than one that is consistently slow, as the instability hinders effective troubleshooting and capacity planning.
+
+
+Which metrics from iperf3 would you include in your report to determine if the network is the primary bottleneck?
+
+- TCP Retransmissions serve as a key indicator. If packets are lost and resent, the network is lossy, forcing congestion control throttling that confirms the network path is the bottleneck rather than the storage medium.
+- Throughput defines the bandwidth ceiling. If the network bandwidth saturates at a lower limit than the storage device's capability, the link acts as the performance cap.
+- Jitter measures packet delay variation. High jitter signals network congestion or queuing, which destabilizes I/O consistency and directly contributes to high P99 latency as clients wait for delayed packets.
+
+
+How would you handle data aggregation for a 24-hour "Soak Test"?
+
+To preserve the integrity of a 24-hour soak test, data aggregation must avoid global averaging in favor of methods that maintain visibility into temporal trends and statistical accuracy. The primary approach is Time-Series Binning (Windowing), where data is segmented into small, non-overlapping intervals (e.g. 1 minute windows). This technique allows for the calculation of statistics like P99 per window, exposing performance drift, such as a slow creep in latency caused by memory leaks, that would be erased by a single global average. To ensure statistical validity for the entire run, Histogram Summation is required, because percentiles are not mathematically additive, the raw bucket counts from tools like fio must be summed to derive a precise aggregate P99.
+      
+
